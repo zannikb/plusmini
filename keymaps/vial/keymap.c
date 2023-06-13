@@ -7,8 +7,26 @@
 #include "joystick.h"
 #include "analog.h"
 
-static int actuation = 256; // actuation point for arrows (0-511)
-bool arrows[4];
+//static int actuation = 256; // actuation point for arrows (0-511)
+//bool arrows[4];
+
+
+#define _CENTER 512
+#define _DEAD 20
+#define _SHIFT 15 // last 15 steps upwards
+
+#define _DOWN_TRESHOLD (_CENTER+_DEAD)
+#define _UP_TRESHOLD (_CENTER-_DEAD)
+
+bool wasdMode = true;
+bool wasdShiftMode = false;
+bool autorun = false;
+
+enum custom_keycodes {
+  JOY_MODE = SAFE_RANGE,
+  AUTO_RUN,
+};
+
 
 #define KC_COPY  LCTL(KC_C)
 #define KC_1E LCTL(KC_V)
@@ -339,6 +357,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
    }
 
    return true;
+
+     if (keycode == JOY_MODE && record->event.pressed) {
+    if (!wasdMode) {
+      wasdMode = true;
+    } else if (wasdMode && !wasdShiftMode) {
+      wasdShiftMode = true;
+    } else {
+      wasdMode = false;
+      wasdShiftMode = false;
+    }
+  } else if (keycode == AUTO_RUN && record->event.pressed) {
+    if (!autorun) {
+      autorun = true;
+      register_code(KC_W);
+    } else {
+      autorun = false;
+      unregister_code(KC_W);
+    }
+  }
+
+  return true;
 } // End of process_record_user. 
 
 #endif 
@@ -350,7 +389,74 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
 
 // ANALOG PART START
 
-void matrix_scan_user(void) {
+// FROM REDOXPAD
+#ifdef JOYSTICK_ENABLE
+  int16_t xPos = 0;
+  int16_t yPos = 0;
+
+  bool yDownHeld = false;
+  bool yUpHeld = false;
+  bool xLeftHeld = false;
+  bool xRightHeld = false;
+  bool shiftHeld = false;
+
+  void matrix_scan_user(void) {
+    if (wasdMode) {
+      // W & S
+      if (!autorun) {
+      yPos = analogReadPin(B6);
+        if (!yDownHeld && yPos >= _DOWN_TRESHOLD) {
+          register_code(KC_S);
+          yDownHeld = true;
+        } else if (yDownHeld && yPos < _DOWN_TRESHOLD) {
+          yDownHeld = false;
+          unregister_code(KC_S);
+        } else if (!yUpHeld && yPos <= _UP_TRESHOLD) {
+          yUpHeld = true;
+          register_code(KC_W);
+        } else if (yUpHeld && yPos > _UP_TRESHOLD) {
+          yUpHeld = false;
+          unregister_code(KC_W);
+        }
+      }
+      
+      xPos = analogReadPin(D7);
+      if (!xLeftHeld && xPos >= _DOWN_TRESHOLD) {
+        register_code(KC_D);
+        xLeftHeld = true;
+      } else if (xLeftHeld && xPos < _DOWN_TRESHOLD) {
+        xLeftHeld = false;
+        unregister_code(KC_D);
+      } else if (!xRightHeld && xPos <= _UP_TRESHOLD) {
+        xRightHeld = true;
+        register_code(KC_A);
+      } else if (xRightHeld && xPos > _UP_TRESHOLD) {
+        xRightHeld = false;
+        unregister_code(KC_A);
+      }
+
+      if (wasdShiftMode) {
+        bool yShifted = yPos < _SHIFT;
+        if (!shiftHeld && yShifted) {
+          register_code(KC_LSFT);
+          shiftHeld = true;
+        } else if (shiftHeld && !yShifted) {
+          unregister_code(KC_LSFT);
+          shiftHeld = false;
+        }
+      }
+    }
+  }
+
+  //joystick config
+  joystick_config_t joystick_axes[JOYSTICK_AXES_COUNT] = {
+    JOYSTICK_AXIS_IN(D7, 0, 512, 1023),
+    JOYSTICK_AXIS_IN(B6, 0, 512, 1023)
+  };
+#endif
+
+// FROM LIBRA MINI
+/*void matrix_scan_user(void) {
 	  // Up
   	if (!arrows[0] && analogReadPin(B6) - 512 > actuation) {
   			arrows[0] = true;
@@ -391,12 +497,12 @@ void matrix_scan_user(void) {
   			uint16_t keycode = dynamic_keymap_get_keycode(biton32(layer_state), 3,3);
   			unregister_code16(keycode);
   	}
-}
+}*/
 
 // Joystick config
-joystick_config_t joystick_axes[JOYSTICK_AXES_COUNT] = {
-    [0] = JOYSTICK_AXIS_VIRTUAL(D7, 0, 512, 1023),
-    [1] = JOYSTICK_AXIS_VIRTUAL(B6, 0, 512, 1023);
-};
+//joystick_config_t joystick_axes[JOYSTICK_AXES_COUNT] = {
+//    [0] = JOYSTICK_AXIS_VIRTUAL,
+//    [1] = JOYSTICK_AXIS_VIRTUAL
+//};
 
 // ANALOG PART END
