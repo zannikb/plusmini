@@ -39,6 +39,12 @@
 
 // Pick good defaults for enabling homerow modifiers
 #define TAPPING_TERM 230
+#define TAPPING_FORCE_HOLD
+
+//FROM REDOXPAD
+//#define TAPPING_TERM 150
+#define PERMISSIVE_HOLD
+#define IGNORE_MOD_TAP_INTERRUPT
 // #define PERMISSIVE_HOLD
 //#define IGNORE_MOD_TAP_INTERRUPT
 //#define TAPPING_FORCE_HOLD
@@ -58,11 +64,16 @@
 //#define OLED_FONT_H "glcdfont.c"
 #define OLED_FONT_H "keyboards/plusmini/lib/glcdfont.c"
 
+//FROM BOTH
 /* joystick parameters */
 // Max 32
 #define JOYSTICK_BUTTON_COUNT 0
 // Max 6: X, Y, Z, Rx, Ry, Rz
 #define JOYSTICK_AXES_COUNT 2
+
+
+//FROM REDOXPAD
+#define COMBO_COUNT 1
 
 /* Use 1000hz polling */
 #define USB_POLLING_INTERVAL_MS 1

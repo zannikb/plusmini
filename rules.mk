@@ -13,6 +13,7 @@ JOYSTICK_ENABLE = yes
 JOYSTICK_DRIVER = analog
 # Add analog functionality to the source tree
 SRC += analog.c
+COMBO_ENABLE = yes
 
 # ENCODER
 # ENCODER_MAP_ENABLE = yes
